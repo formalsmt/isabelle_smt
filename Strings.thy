@@ -391,6 +391,69 @@ theorem str_substr1:
     by blast
 qed
 
+theorem str_substr1':
+  assumes "0 \<le> m" and "m < \<bar>w\<bar>" and "0 < n"
+  shows "\<exists>v. str_substr w m n = v \<and> (\<exists>x y. w =  x\<cdot>v\<cdot>y \<and> \<bar>x\<bar> = m \<and>  \<bar>v\<bar> = min n (\<bar>w\<bar> - m))"
+  using assms str_substr1 by metis
+
+theorem str_substr11:
+  assumes "0 \<le> m" and "m < \<bar>w\<bar>" and "0 < n"
+  shows "\<exists>v. (\<exists>x y. w =  x\<cdot>v\<cdot>y \<and> \<bar>x\<bar> = m \<and>  \<bar>v\<bar> = min n (\<bar>w\<bar> - m))"
+  using str_substr1'[OF assms]
+  apply -
+  apply auto
+  done
+
+theorem str_substr1111:
+  assumes "0 \<le> m" and "m < \<bar>w\<bar>" and "0 < n" and "v = str_substr w m n"
+  shows "(\<exists>x y. w =  x\<cdot>v\<cdot>y \<and> \<bar>x\<bar> = m \<and> \<bar>v\<bar> = min n (\<bar>w\<bar> - m))"
+  proof -
+  from assms have "nat m < (length w) \<and> nat m \<le> nat m + nat n" by auto
+  have "
+             (\<exists>x y. w = x\<cdot>v\<cdot>y \<and> \<bar>x\<bar> = m \<and> (length v) = min (nat n) ((length w)-nat m))"
+    by (metis (no_types, lifting) \<open>nat m < length w \<and> nat m \<le> nat m + nat n\<close> add_diff_cancel_left' 
+        assms(1) assms(2) assms(3) assms(4) factorization int_nat_eq substr_factor_equal) 
+  then have "
+             (\<exists>x y. w = x\<cdot>v\<cdot>y \<and> \<bar>x\<bar> = m \<and> (length v) = min (nat n) ((length w)-nat m))" 
+    using assms substr_factor_equal by meson
+  then have "
+             (\<exists>x y. w = x\<cdot>v\<cdot>y \<and> \<bar>x\<bar> = m \<and> \<bar>v\<bar> = int (min (nat n) ((length w)-nat m)))" 
+    by simp
+  then have "(\<exists>x y. w = x\<cdot>v\<cdot>y \<and> \<bar>x\<bar> = m \<and> \<bar>v\<bar> = (min n (\<bar>w\<bar>- m)))" 
+    using length_int_nat_sub_min assms by auto
+  then show ?thesis 
+    by blast
+qed
+
+theorem str_substr1111_variant:
+  assumes "0 \<le> m" and "m < \<bar>w\<bar>" and "0 < n"
+  shows "(\<exists>x y. w = x\<cdot>(str_substr w m n)\<cdot>y \<and> \<bar>x\<bar> = m \<and> \<bar>str_substr w m n\<bar> = min n (\<bar>w\<bar> - m))"
+  using str_substr1111 assms by auto
+
+theorem str_substr111_eq:
+  assumes "0 \<le> m" and "m < \<bar>w\<bar>" and "0 < n"
+  assumes "(\<exists>x y. w =  x\<cdot>v\<cdot>y \<and> \<bar>x\<bar> = m \<and> \<bar>v\<bar> = min n (\<bar>w\<bar> - m))"
+  assumes "(\<exists>x y. w =  x\<cdot>v'\<cdot>y \<and> \<bar>x\<bar> = m \<and> \<bar>v'\<bar> = min n (\<bar>w\<bar> - m))"
+  shows "v' = v"
+  by (metis append_eq_append_conv assms(4) assms(5) of_nat_eq_iff)
+
+theorem str_substr111:
+  assumes "0 \<le> m" and "m < \<bar>w\<bar>" and "0 < n"
+  shows "\<exists>!v. (\<exists>x y. w =  x\<cdot>v\<cdot>y \<and> \<bar>x\<bar> = m \<and> \<bar>v\<bar> = min n (\<bar>w\<bar> - m))"
+  using assms 
+  apply -
+  apply (rule ex_ex1I)
+  subgoal
+    using str_substr11 by blast
+  by (metis append_eq_append_conv of_nat_eq_iff) 
+
+theorem str_substr1111111111:
+  assumes "0 \<le> m" and "m < \<bar>w\<bar>" and "0 < n"
+  shows "str_substr w m n = (THE v. (\<exists>x y. w = x\<cdot>v\<cdot>y \<and> \<bar>x\<bar> = m \<and> \<bar>v\<bar> = min n (\<bar>w\<bar> - m)))"
+  using  theI_unique[OF str_substr111[OF assms], of "str_substr w m n"]
+  using str_substr1111_variant[OF assms]
+  by auto
+
 theorem str_substr2:
   assumes "\<not>(0 \<le> m \<and> m <  \<bar>w\<bar> \<and> 0 < n)"
   shows "str_substr w m n = \<epsilon>"
