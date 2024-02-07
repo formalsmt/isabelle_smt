@@ -55,6 +55,15 @@ fun indexof:: "'a word \<Rightarrow> 'a word \<Rightarrow> nat \<Rightarrow> nat
 fun replace:: "'a word \<Rightarrow> 'a word \<Rightarrow> 'a word \<Rightarrow> 'a word" where
   "replace w v u = (case indexof w v 0 of Some i \<Rightarrow> (take i w)\<cdot>u\<cdot>(drop (i+(length v)) w) | None => w)"
 
+function (sequential) replace_all:: "'a word \<Rightarrow> 'a word \<Rightarrow> 'a word \<Rightarrow> 'a word" where
+  "replace_all w \<epsilon> u = w" |
+  "replace_all w v u = (case indexof w v 0 of Some i \<Rightarrow> (take i w)\<cdot>u\<cdot>(replace_all (drop (i+(length v)) w) v u) | None => w)"
+  apply pat_completeness by auto
+termination 
+  apply auto
+  sorry
+
+
 subsection "Factorization"
 
 lemma drop_append:
@@ -315,12 +324,34 @@ proof -
   then have "factor v w" using contains_iff_factor by auto
   then have "\<exists>n. indexof_nat w v 0 = n \<and> (\<exists>x y. w = x\<cdot>v\<cdot>y \<and> 0 \<le> n \<and> n = \<bar>x\<bar>) \<and> (\<forall>n'. (\<exists>x y. w = x\<cdot>v\<cdot>y \<and> 0 \<le> n' \<and> n' = \<bar>x\<bar>)  \<longrightarrow> n \<le> n')"
     by (metis bot_nat_0.extremum drop0 str_indexof_nat1) 
-  then obtain n where "indexof_nat w v 0 = n \<and> (\<exists>x y. w = x\<cdot>v\<cdot>y \<and> n = \<bar>x\<bar>) \<and> (\<forall>n'. (\<exists>x y. w = x\<cdot>v\<cdot>y \<and> 0 \<le> n' \<and> n' = \<bar>x\<bar>)  \<longrightarrow> n \<le> n')" by blast
+  then obtain n where "indexof_nat w v 0 = n \<and>              (\<exists>x y. w = x\<cdot>v\<cdot>y \<and> n = \<bar>x\<bar>) \<and> (\<forall>n'. (\<exists>x y. w = x\<cdot>v\<cdot>y \<and> 0 \<le> n' \<and> n' = \<bar>x\<bar>)  \<longrightarrow> n \<le> n')" by blast
   then have "replace w v u = (take n w)\<cdot>u\<cdot>(drop (n+\<bar>v\<bar>) w) \<and> (\<exists>x y. w = x\<cdot>v\<cdot>y \<and> n = \<bar>x\<bar>) \<and> (\<forall>n'. (\<exists>x' y'. w = x'\<cdot>v\<cdot>y' \<and> 0 \<le> n' \<and> n' = \<bar>x'\<bar>)  \<longrightarrow> n \<le> n')" by auto
   then have "\<exists>x y. replace w v u = x\<cdot>u\<cdot>y \<and> n = \<bar>x\<bar> \<and>  w = x\<cdot>v\<cdot>y \<and> (\<forall>n'. (\<exists>x' y'. w = x'\<cdot>v\<cdot>y' \<and> 0 \<le> n' \<and> n' = \<bar>x'\<bar>)  \<longrightarrow> n \<le> n')"
     by (metis append.assoc append_eq_conv_conj length_append)
   then have "\<exists>x y. replace w v u = x\<cdot>u\<cdot>y \<and>  w = x\<cdot>v\<cdot>y \<and> (\<forall>n'. (\<exists>x' y'. w = x'\<cdot>v\<cdot>y' \<and> 0 \<le> n' \<and> n' = \<bar>x'\<bar>)  \<longrightarrow> \<bar>x\<bar> \<le> n')" by metis 
   then show ?thesis by blast
+qed
+
+
+
+lemma replace_all_id_if_not_contains: "\<not>contains w v \<Longrightarrow> replace_all w v u = w"
+  using contains_iff_factor
+  by (metis (no_types, lifting) indexof_if_not_contains option.simps(4) prefix_iff_fac prefix_order.dual_order.refl replace_all.simps)
+
+theorem replace_all_all_factors: "contains w v \<Longrightarrow> \<exists>x y z. replace_all w v u = x\<cdot>u\<cdot>y \<and> w = x\<cdot>v\<cdot>z \<and> y = replace_all z v u \<and> (\<forall> x'. (\<exists>y'. w=x'\<cdot>v\<cdot>y') \<longrightarrow> \<bar>x\<bar> \<le> \<bar>x'\<bar>)"
+proof -
+  assume "contains w v"
+  then have "factor v w" using contains_iff_factor by auto
+  then have rr:"\<exists>n. indexof_nat w v 0 = n \<and> (\<exists>x y. w = x\<cdot>v\<cdot>y \<and> 0 \<le> n \<and> n = \<bar>x\<bar>) \<and> (\<forall>n'. (\<exists>x y. w = x\<cdot>v\<cdot>y \<and> 0 \<le> n' \<and> n' = \<bar>x\<bar>)  \<longrightarrow> n \<le> n')"
+    by (metis bot_nat_0.extremum drop0 str_indexof_nat1) 
+  then obtain n where n_def:"indexof_nat w v 0 = n              \<and> (\<exists>x y. w = x\<cdot>v\<cdot>y \<and> n = \<bar>x\<bar>) \<and> (\<forall>n'. (\<exists>x y. w = x\<cdot>v\<cdot>y \<and> 0 \<le> n' \<and> n' = \<bar>x\<bar>)  \<longrightarrow> n \<le> n')" by blast
+  then have "replace_all w v u = (case indexof w v 0 of Some i \<Rightarrow> (take i w)\<cdot>u\<cdot>(replace_all (drop (i+(length v)) w) v u) | None => w) \<and> (\<exists>x y. w = x\<cdot>v\<cdot>y \<and> n = \<bar>x\<bar>) \<and> (\<forall>n'. (\<exists>x' y'. w = x'\<cdot>v\<cdot>y' \<and> 0 \<le> n' \<and> n' = \<bar>x'\<bar>)  \<longrightarrow> n \<le> n')" by auto 
+   then have "replace_all w v u = (take n w)\<cdot>u\<cdot>(replace_all (drop (n+(length v)) w) v u) \<and> (\<exists>x y. w = x\<cdot>v\<cdot>y \<and> n = \<bar>x\<bar>) \<and> (\<forall>n'. (\<exists>x' y'. w = x'\<cdot>v\<cdot>y' \<and> 0 \<le> n' \<and> n' = \<bar>x'\<bar>)  \<longrightarrow> n \<le> n')" using n_def rr sledgehammer
+     by (smt (verit) \<open>factor v w\<close> factor_is_word_if_j_geq_length get_factor.elims indexof.elims list.size(3) nle_le option.simps(5))
+  then have "\<exists>x y z. replace_all w v u = x\<cdot>u\<cdot>y  \<and> w = x\<cdot>v\<cdot>z \<and> y = (replace_all z v u)  \<and> n = \<bar>x\<bar> \<and> (\<forall>n'. (\<exists>x' y'. w = x'\<cdot>v\<cdot>y' \<and> 0 \<le> n' \<and> n' = \<bar>x'\<bar>)  \<longrightarrow> n \<le> n')"
+    by (smt (verit, ccfv_threshold) append_assoc append_eq_conv_conj length_append)
+  then have "\<exists>x y z. replace_all w v u = x\<cdot>u\<cdot>y  \<and> w = x\<cdot>v\<cdot>z \<and> y = (replace_all z v u)                                            \<and> (\<forall>n'. (\<exists>x' y'. w = x'\<cdot>v\<cdot>y' \<and> 0 \<le> n' \<and> n' = \<bar>x'\<bar>)  \<longrightarrow> \<bar>x\<bar> \<le> n')" by metis 
+  then show ?thesis by (metis bot_nat_0.extremum)
 qed
 
 end

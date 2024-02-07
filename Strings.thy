@@ -119,7 +119,7 @@ abbreviation str_replace:: "uc_word \<Rightarrow> uc_word \<Rightarrow> uc_word 
   "str_replace \<equiv> replace"
 
 abbreviation str_replace_all:: "uc_word \<Rightarrow> uc_word \<Rightarrow> uc_word \<Rightarrow> uc_word" where 
-  "str_replace_all \<equiv> undefined"
+  "str_replace_all \<equiv> replace_all"
 
 abbreviation str_replace_re:: "uc_word \<Rightarrow> uc_regex \<Rightarrow> uc_word \<Rightarrow> uc_word" where 
   "str_replace_re \<equiv> undefined"
@@ -522,7 +522,20 @@ theorem str_replace2:
   shows "str_replace w v u = w" 
   using assms replace_id_if_not_contains by blast
 
-(* TODO: Add replace_all, replace_re, replace_all_re! *)
+
+theorem str_replace_all1: 
+  assumes "str_contains w v"
+  assumes "v \<noteq> \<epsilon>"
+  shows "\<exists>x y z. str_replace_all w v u = x\<cdot>u\<cdot>y \<and> w = x\<cdot>v\<cdot>z \<and> y = str_replace_all z v u  \<and> (\<forall> x'. (\<exists>y'. w=x'\<cdot>v\<cdot>y') \<longrightarrow> \<bar>x\<bar> \<le> \<bar>x'\<bar>)"
+  using replace_all_all_factors
+  by (metis assms(1) zle_int)
+
+theorem str_replace_all2: 
+  assumes "\<not> str_contains w v \<or> v = \<epsilon>"
+  shows "\<exists>x y z. str_replace_all w v u = w"
+  using replace_all_id_if_not_contains sledgehammer
+  using assms replace_all.simps(1) by blast
+
 
 
 subsubsection "Regular languages"
